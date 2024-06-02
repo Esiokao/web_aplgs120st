@@ -10,76 +10,98 @@ from selenium.webdriver.common.by import By
 
 from selenium.webdriver.chrome.service import Service
 
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
 import subprocess
 import time
 
 
-def check(sysInfoSysName, sysInfoSysLocation):
-    target_url = 'http://10.3.4.5'
-
-    timeoutTime = 2
-
-    service = Service(ChromeDriverManager().install())
-
-    driver = webdriver.Chrome(service=service)
-
-    driver.get(target_url)
-
-    # username input
-
-    username = driver.find_element(By.ID, 'Login')
-
-    username.send_keys("adpro")
-
-    # login button
-
-    loginButton = driver.find_element(By.ID, 'login_ok')
-
-    loginButton.click()
-
-    time.sleep(timeoutTime)
-
+def check(sysInfoSysName, sysInfoSysLocation, service):
     try:
+        target_url = 'http://10.3.4.5'
 
-        WebDriverWait(driver, 3).until(
-            EC.alert_is_present(), 'Timed out waiting for PA creation ' +
-            'confirmation popup to appear.')
+        timeoutTime = 2
 
-        alert = driver.switch_to.alert
-        alert.accept()
+        driver = webdriver.Chrome(service=service)
 
-        print("alert accepted")
+        driver.implicitly_wait(10)
 
-    except TimeoutException:
+        driver.get(target_url)
 
-        print("no alert")
+        try:
+            driver.refresh()
 
-    time.sleep(timeoutTime)
+            # username input
 
-    # root SwitchInfo
+            username = driver.find_element(By.ID, 'Login')
 
-    switchInfoToggle = driver.find_element(
-        By.XPATH,
-        '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/table[2]/tbody/tr/td[3]/a'
-    )
+            username.send_keys("adpro")
 
-    switchInfoToggle.click()
+            # login button
 
-    # iframe
+            loginButton = driver.find_element(By.ID, 'login_ok')
 
-    driver.switch_to.frame(driver.find_element(By.ID, "myframe"))
+            loginButton.click()
 
-    # get sysInfoSysName
+        except NoSuchElementException as e:
 
-    _sysInfoSysName = driver.find_element(By.ID, 'sysInfoSysName').text
+            print('No login page displayed')
 
-    # get sysInfoSysName
+            return (False, 'no login page')
+        try:
 
-    _sysInfoSysLocation = driver.find_element(By.ID, 'sysInfoSysLocation').text
+            WebDriverWait(driver, 3).until(
+                EC.alert_is_present(), 'Timed out waiting for PA creation ' +
+                'confirmation popup to appear.')
 
-    driver.quit()
+            alert = driver.switch_to.alert
+            alert.accept()
 
-    if _sysInfoSysName == sysInfoSysName and _sysInfoSysLocation == sysInfoSysLocation:
-        return True
-    else:
-        return False
+            print("alert accepted")
+
+        except TimeoutException:
+
+            print("no alert")
+
+            return (False, 'Login failed')
+        # root SwitchInfo
+
+        switchInfoToggle = driver.find_element(
+            By.XPATH,
+            '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/table[2]/tbody/tr/td[3]/a'
+        )
+
+        switchInfoToggle.click()
+
+        # iframe
+
+        driver.switch_to.frame(driver.find_element(By.ID, "myframe"))
+
+        # get sysInfoSysName
+
+        _sysInfoSysName = driver.find_element(By.ID, 'sysInfoSysName').text
+
+        # get sysInfoSysName
+
+        _sysInfoSysLocation = driver.find_element(By.ID,
+                                                  'sysInfoSysLocation').text
+
+        if _sysInfoSysName == sysInfoSysName and _sysInfoSysLocation == sysInfoSysLocation:
+
+            return (True, 'matched, got System Name: %s, System Location: %s' %
+                    (sysInfoSysName, sysInfoSysLocation))
+
+        else:
+
+            return (False,
+                    'not matched, got System Name: %s, System Location: %s' %
+                    (sysInfoSysName, sysInfoSysLocation))
+    except:
+
+        return (False, 'exception occurred')
+
+    finally:
+
+        # release resources
+
+        driver.close()

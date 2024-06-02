@@ -12,11 +12,14 @@ reboot = b'sw o01 reboot\r\n'
 
 # Connect to the Telnet server
 
-tn = telnetlib.Telnet(hostName, port)
+
+def createTelnet():
+    tn = telnetlib.Telnet(hostName, port)
+    return tn
 
 
-def login():
-    global tn
+def login(tn):
+
     try:
         # Read until 'Login:' prompt
 
@@ -44,8 +47,8 @@ def login():
         print(f"Connection failed: {e}")
 
 
-def disconnect():
-    global tn
+def disconnect(tn):
+
     try:
         # Send the reboot command
 
