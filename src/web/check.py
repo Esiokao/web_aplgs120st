@@ -88,14 +88,19 @@ def check(sysInfoSysName, sysInfoSysLocation, service):
 
         if _sysInfoSysName == sysInfoSysName and _sysInfoSysLocation == sysInfoSysLocation:
 
-            return (True, 'matched, got System Name: %s, System Location: %s' %
-                    (sysInfoSysName, sysInfoSysLocation))
+            return (
+                True,
+                'expect: %s, got System Name: %s; expect: %s, got System Location: %s'
+                % (sysInfoSysName, _sysInfoSysName, sysInfoSysLocation,
+                   _sysInfoSysLocation))
 
         else:
 
-            return (False,
-                    'not matched, got System Name: %s, System Location: %s' %
-                    (sysInfoSysName, sysInfoSysLocation))
+            return (
+                False,
+                'expect: %s, got System Name: %s; expect: %s, got System Location: %s'
+                % (sysInfoSysName, _sysInfoSysName, sysInfoSysLocation,
+                   _sysInfoSysLocation))
     except:
 
         return (False, 'exception occurred')

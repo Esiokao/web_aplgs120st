@@ -111,11 +111,13 @@ def createService(sysName, sysLocation):
 
         alert.accept()
 
-        print("alert accepted")
+        print("password alert accepted")
 
-    except TimeoutException:
+    except TimeoutException as e:
 
-        print("no alert")
+        print("no password alert", e)
+
+        logger.error('no password alert', e)
 
         return
 
@@ -170,9 +172,9 @@ def createService(sysName, sysLocation):
 
         logger.info('OK - Set System Name: %s ,  System Location: %s' %
                     (sysName, sysLocation))
-    except:
+    except Exception as e:
 
-        logger.error('BAD - Setting SystemName failed')
+        logger.error('BAD - Setting SystemName failed', e)
 
     # time.sleep(timeoutTime)
 
@@ -232,6 +234,9 @@ def createService(sysName, sysLocation):
 
         logger.info('OK - save successful alert box detected')
 
+        # wait for 500ms
+        time.sleep(.5)
+
         start = time.time()
 
         print('fire hook function')
@@ -253,7 +258,9 @@ def createService(sysName, sysLocation):
 
         return
 
-    driver.quit()
+    finally:
+
+        driver.quit()
 
 
 for i in range(5):
@@ -261,14 +268,11 @@ for i in range(5):
     # 取得目前時間
     current_time = datetime.now()
 
-    # 以指定格式生成時間字符串
     formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S")
 
     # attemptTime = 'attempt'
 
     fileName = formatted_time + '.log'
-
-    formatter = logging.Formatter()
 
     logging.basicConfig(level=logging.INFO,
                         filename=fileName,
@@ -276,11 +280,13 @@ for i in range(5):
                         format="%(asctime)s - %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S")
 
-    logger = logging.getLogger()
+    logger = logging.getLogger(str(i))
 
     for j in range(100):
 
-        logger.info('attempt %d -' % j)
+        print(str(j + 1) + '\n')
+
+        logger.info('attempt %d -' % (j + 1))
 
         sysName = random_char(10) + "%02d" % (j + 1)
 
@@ -296,7 +302,7 @@ for i in range(5):
 
         if status != True:
 
-            logger.error('BAD - reboot check : %s' % result)
+            logger.error('BAD - %s' % result)
         else:
 
-            logger.info('OK - reboot check : %s' % result)
+            logger.info('OK - %s' % result)
