@@ -1,24 +1,14 @@
 import telnetlib
 
-hostName = '192.168.0.60'
-
-port = 23
-
-user = b'administrator\r\n'
-
-pw = b'password\r\n'
-
-reboot = b'sw o01 reboot\r\n'
-
 # Connect to the Telnet server
 
 
-def createTelnet():
+def createTelnet(hostName, port=23):
     tn = telnetlib.Telnet(hostName, port)
     return tn
 
 
-def login(tn):
+def login(tn, user=b'administrator\r\n', password=b'password\r\n'):
 
     try:
         # Read until 'Login:' prompt
@@ -35,19 +25,20 @@ def login(tn):
 
         # Send password
 
-        tn.write(pw)
+        tn.write(password)
 
         # Read until 'Logged in successfully'
 
         tn.read_until(b'Logged in successfully', timeout=2)
 
-        # Read until the command prompt, assuming it's '>'
     except Exception as e:
 
         print(f"Connection failed: {e}")
 
 
-def disconnect(tn):
+def cutPower(tn, rebootCmd=b'sw o01 reboot\r\n'):
+
+    rebootCmd = b'sw o01 reboot\r\n'
 
     try:
         # Send the reboot command

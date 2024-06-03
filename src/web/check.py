@@ -13,58 +13,13 @@ from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 import subprocess
+
 import time
 
 
-def check(sysInfoSysName, sysInfoSysLocation, service):
+def check(driver, sysInfoSysName, sysInfoSysLocation, service, logger):
     try:
-        target_url = 'http://10.3.4.5'
-
-        timeoutTime = 2
-
-        driver = webdriver.Chrome(service=service)
-
-        driver.implicitly_wait(10)
-
-        driver.get(target_url)
-
-        try:
-            driver.refresh()
-
-            # username input
-
-            username = driver.find_element(By.ID, 'Login')
-
-            username.send_keys("adpro")
-
-            # login button
-
-            loginButton = driver.find_element(By.ID, 'login_ok')
-
-            loginButton.click()
-
-        except NoSuchElementException as e:
-
-            print('No login page displayed')
-
-            return (False, 'no login page')
-        try:
-
-            WebDriverWait(driver, 3).until(
-                EC.alert_is_present(), 'Timed out waiting for PA creation ' +
-                'confirmation popup to appear.')
-
-            alert = driver.switch_to.alert
-            alert.accept()
-
-            print("alert accepted")
-
-        except TimeoutException:
-
-            print("no alert")
-
-            return (False, 'Login failed')
-        # root SwitchInfo
+        # Menu/SwitchInfo
 
         switchInfoToggle = driver.find_element(
             By.XPATH,
@@ -73,7 +28,7 @@ def check(sysInfoSysName, sysInfoSysLocation, service):
 
         switchInfoToggle.click()
 
-        # iframe
+        # switch to iframe
 
         driver.switch_to.frame(driver.find_element(By.ID, "myframe"))
 
@@ -81,29 +36,30 @@ def check(sysInfoSysName, sysInfoSysLocation, service):
 
         _sysInfoSysName = driver.find_element(By.ID, 'sysInfoSysName').text
 
-        # get sysInfoSysName
+        # get sysInfoSysLocation
 
         _sysInfoSysLocation = driver.find_element(By.ID,
                                                   'sysInfoSysLocation').text
 
         if _sysInfoSysName == sysInfoSysName and _sysInfoSysLocation == sysInfoSysLocation:
 
-            return (
-                True,
+            logger.info(
                 'expect: %s, got System Name: %s; expect: %s, got System Location: %s'
                 % (sysInfoSysName, _sysInfoSysName, sysInfoSysLocation,
                    _sysInfoSysLocation))
 
         else:
 
-            return (
-                False,
+            logger.error(
                 'expect: %s, got System Name: %s; expect: %s, got System Location: %s'
                 % (sysInfoSysName, _sysInfoSysName, sysInfoSysLocation,
                    _sysInfoSysLocation))
-    except:
 
-        return (False, 'exception occurred')
+    except Exception as e:
+
+        print('check error')
+
+        raise Exception('check error')
 
     finally:
 

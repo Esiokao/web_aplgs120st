@@ -10,15 +10,13 @@ from selenium.webdriver.common.by import By
 
 from selenium.webdriver.chrome.service import Service
 
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-
-from telnet.disconnect import login, disconnect, createTelnet
-
 from utils.change_ipAddr import change_ipAddr
 
-from utils.rand_char import random_char
+from web import login, setProp, check
 
-from web.check import check
+from utils.randChar import randChar
+
+import web
 
 import subprocess
 
@@ -56,213 +54,6 @@ service = Service(ChromeDriverManager().install())
 
 # print(f"Installed ChromeDriver version: {version}")
 
-
-def createService(sysName, sysLocation):
-
-    driver = webdriver.Chrome(service=service)
-
-    driver.implicitly_wait(10)
-
-    driver.get(target_url)
-
-    driver.refresh()
-
-    title = driver.title
-
-    if title == 'Login':
-
-        logger.info('OK - Http request ok')
-
-    else:
-
-        logger.error('Bad - Bad request')
-
-        return
-
-    try:
-
-        # fill username input field
-
-        username = driver.find_element(By.ID, 'Login')
-
-        username.send_keys("adpro")
-
-        # click login button
-
-        loginButton = driver.find_element(By.ID, 'login_ok')
-
-        loginButton.click()
-
-    except NoSuchElementException as e:
-
-        print(e)
-
-        return
-
-    time.sleep(timeoutTime)
-
-    try:
-
-        WebDriverWait(driver, 3).until(
-            EC.alert_is_present(), 'Timed out waiting for PA creation ' +
-            'confirmation popup to appear.')
-
-        alert = driver.switch_to.alert
-
-        alert.accept()
-
-        print("password alert accepted")
-
-    except TimeoutException as e:
-
-        print("no password alert", e)
-
-        logger.error('no password alert', e)
-
-        return
-
-    time.sleep(timeoutTime)
-
-    # menu/System
-
-    menuSysEle = driver.find_element(
-        By.XPATH,
-        '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/table[3]/tbody/tr/td[3]/a'
-    )
-
-    menuSysEle.click()
-
-    time.sleep(timeoutTime)
-
-    # menu/System/System Management
-
-    menuSysManagerEle = driver.find_element(
-        By.XPATH,
-        '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/div[1]/table[1]/tbody/tr/td[3]/a'
-    )
-
-    menuSysManagerEle.click()
-
-    # time.sleep(timeoutTime)
-
-    driver.switch_to.frame(driver.find_element(By.ID, "myframe"))
-
-    try:
-        # sysInfoSysName
-
-        sysInfoSysNameInput = driver.find_element(
-            By.XPATH,
-            '/html/body/form/div/div[2]/table/tbody/tr[3]/td[2]/input')
-
-        sysInfoSysNameInput.clear()
-
-        sysInfoSysNameInput.send_keys(sysName)
-
-        time.sleep(timeoutTime)
-
-        # sysInfoSysLocation
-
-        sysInfoSysLocationInput = driver.find_element(
-            By.XPATH,
-            '/html/body/form/div/div[2]/table/tbody/tr[4]/td[2]/input')
-
-        sysInfoSysLocationInput.clear()
-
-        sysInfoSysLocationInput.send_keys(sysLocation)
-
-        logger.info('OK - Set System Name: %s ,  System Location: %s' %
-                    (sysName, sysLocation))
-    except Exception as e:
-
-        logger.error('BAD - Setting SystemName failed', e)
-
-    # time.sleep(timeoutTime)
-
-    # apply button
-
-    applyBtn = driver.find_element(By.XPATH,
-                                   '/html/body/form/div/div[2]/div[2]/input')
-
-    applyBtn.click()
-
-    # time.sleep(timeoutTime)
-
-    # go back to parent content layer
-
-    driver.switch_to.default_content()
-
-    try:
-        # save page
-
-        savePageLink = driver.find_element(By.XPATH,
-                                           '/html/body/div/div[2]/div[1]/a')
-
-        savePageLink.click()
-
-        # access to frame layer
-
-        driver.switch_to.frame(driver.find_element(By.ID, "myframe"))
-
-        # save Settings
-
-        saveSettingToFlashBtn = driver.find_element(
-            By.XPATH, '/html/body/form/div/div[2]/div/div[2]/input')
-
-        saveSettingToFlashBtn.click()
-
-        # create telnet connection to PSU ahead
-
-        tn = createTelnet()
-
-        # login PSU Management interface
-
-        login(tn)
-
-        WebDriverWait(driver, 5).until(
-            EC.alert_is_present(), 'Timed out waiting for PA creation ' +
-            'confirmation popup to appear.')
-
-        # skip the success message
-
-        # alert = driver.switch_to.alert
-
-        # alert.accept()
-
-        # print("success message accepted")
-
-        # call hook here
-
-        logger.info('OK - save successful alert box detected')
-
-        # wait for 500ms
-        time.sleep(.5)
-
-        start = time.time()
-
-        print('fire hook function')
-
-        disconnect(tn)
-
-        end = time.time()
-
-        logger.info('OK - cut off power, time usage: %d ms' % (round(
-            (end - start) * 1000)))
-
-        print('time usage: %d ms' % (round((end - start) * 1000)))
-
-    except Exception as e:
-
-        # expection
-
-        logger.exception(e)
-
-        return
-
-    finally:
-
-        driver.quit()
-
-
 for i in range(5):
 
     # 取得目前時間
@@ -288,21 +79,53 @@ for i in range(5):
 
         logger.info('attempt %d -' % (j + 1))
 
-        sysName = random_char(10) + "%02d" % (j + 1)
+        sysName = randChar(10) + "%02d" % (j + 1)
 
-        sysLocation = random_char(10) + "%02d" % (j + 1)
+        sysLocation = randChar(10) + "%02d" % (j + 1)
 
-        createService(sysName=sysName, sysLocation=sysLocation)
+        # extractable
 
-        time.sleep(reboot_stall_timeout)
+        driver = webdriver.Chrome(service=service)
 
-        status, result = check(sysInfoSysName=sysName,
-                               sysInfoSysLocation=sysLocation,
-                               service=service)
+        driver.implicitly_wait(10)
+        try:
 
-        if status != True:
+            login.login(driver=driver,
+                        targetUrl=target_url,
+                        pageTitle='Login',
+                        username='adpro',
+                        logger=logger,
+                        timeoutTime=.5)
 
-            logger.error('BAD - %s' % result)
-        else:
+            setProp.setProp(
+                driver=driver,
+                logger=logger,
+                timeoutTime=.5,
+                sysInfoSysName=sysName,
+                sysInfoSysLocation=sysLocation,
+            )
 
-            logger.info('OK - %s' % result)
+            time.sleep(reboot_stall_timeout)
+
+            login.login(driver=driver,
+                        targetUrl=target_url,
+                        pageTitle='Login',
+                        username='adpro',
+                        logger=logger,
+                        timeoutTime=.5)
+
+            check.check(driver=driver,
+                        logger=logger,
+                        sysInfoSysName=sysName,
+                        sysInfoSysLocation=sysLocation,
+                        service=service)
+
+        except Exception as e:
+
+            pass
+
+        finally:
+
+            if driver != None:
+
+                driver.close()
