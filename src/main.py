@@ -1,67 +1,50 @@
+import logging
+import time
+
+from datetime import datetime
+
 from selenium import webdriver
 
 from webdriver_manager.chrome import ChromeDriverManager
 
-from selenium.webdriver.support.ui import WebDriverWait
-
-from selenium.webdriver.support import expected_conditions as EC
-
-from selenium.webdriver.common.by import By
-
 from selenium.webdriver.chrome.service import Service
 
-from utils.change_ipAddr import change_ipAddr
+from web.Web import Web
 
-from web import login, setProp, check
+from telnet.TelnetConnection import TelnetConnection
 
 from utils.randChar import randChar
 
-import web
+#
 
-import subprocess
+DEFAULT_URL = 'http://10.3.4.5'
 
-import time
+TARGET_URL = 'http://10.149.24.204'
 
-import logging
+TELNET_TARGET = '192.168.0.60'
 
-from datetime import datetime
+TELNET_PORT = 23
 
-# switch預設IP: 10.3.4.5
+TIMEOUT_TIME = 1.5  # second
 
-target_url = 'http://10.3.4.5'
+IMPLICITLY_WAIT_TIME = 5
 
-timeoutTime = 2
+REBOOT_STALL_TIMEOUT = 100  # second
 
-reboot_stall_timeout = 100  # sec
+NUM_ATTEMPTS = 1500
+
+MAX_CONTINUOUS_ERRORS = 3
+
+# 初始化ChromeDriver
 
 service = Service(ChromeDriverManager().install())
 
-# change_ipAddr("eth1", "10.0.0.1", "255.0.0.0", "10.0.0.254")
 
-# time.sleep(timeoutTime)
+def setup_logging():
 
-# def get_installed_chromedriver_version():
-
-#     driver_path = ChromeDriverManager().install()
-
-#     version = subprocess.check_output([driver_path,
-
-#                                        '--version']).decode('utf-8').strip()
-
-#     return version
-
-# version = get_installed_chromedriver_version()
-
-# print(f"Installed ChromeDriver version: {version}")
-
-for i in range(5):
-
-    # 取得目前時間
     current_time = datetime.now()
 
     formatted_time = current_time.strftime("%Y-%m-%d_%H-%M-%S")
-
-    # attemptTime = 'attempt'
 
     fileName = formatted_time + '.log'
 
@@ -71,61 +54,90 @@ for i in range(5):
                         format="%(asctime)s - %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S")
 
-    logger = logging.getLogger(str(i))
+    return logging.getLogger('logger')
 
-    for j in range(100):
 
-        print(str(j + 1) + '\n')
+def main():
 
-        logger.info('attempt %d -' % (j + 1))
+    logger = setup_logging()
 
-        sysName = randChar(10) + "%02d" % (j + 1)
+    tn = TelnetConnection(TELNET_TARGET, TELNET_PORT)
 
-        sysLocation = randChar(10) + "%02d" % (j + 1)
+    continuous_errors = 0
 
-        # extractable
+    for attempt in range(NUM_ATTEMPTS):
 
-        driver = webdriver.Chrome(service=service)
+        print(f"Attempt {attempt + 1}\n")
 
-        driver.implicitly_wait(10)
+        logger.info(f'Attempt {attempt + 1} -')
+
+        sysName = randChar(10) + f"{attempt + 1:02d}"
+
+        sysLocation = randChar(10) + f"{attempt + 1:02d}"
+
         try:
 
-            login.login(driver=driver,
-                        targetUrl=target_url,
-                        pageTitle='Login',
-                        username='adpro',
-                        logger=logger,
-                        timeoutTime=.5)
+            # create instance
 
-            setProp.setProp(
-                driver=driver,
-                logger=logger,
-                timeoutTime=.5,
-                sysInfoSysName=sysName,
-                sysInfoSysLocation=sysLocation,
-            )
+            web_instance = Web(logger=logger,
+                               service=service,
+                               implicitly_wait_time=IMPLICITLY_WAIT_TIME,
+                               target_url=TARGET_URL,
+                               timeout_time=TIMEOUT_TIME,
+                               telnet_instance=tn)
 
-            time.sleep(reboot_stall_timeout)
+            # login DUT
 
-            login.login(driver=driver,
-                        targetUrl=target_url,
-                        pageTitle='Login',
-                        username='adpro',
-                        logger=logger,
-                        timeoutTime=.5)
+            web_instance.login(username='adpro', page_title='Login')
 
-            check.check(driver=driver,
-                        logger=logger,
-                        sysInfoSysName=sysName,
-                        sysInfoSysLocation=sysLocation,
-                        service=service)
+            # setup property of DUT
+
+            web_instance.set_prop(sys_info_sys_name=sysName,
+                                  sys_info_sys_location=sysLocation)
+
+            web_instance.quit()
+
+            time.sleep(REBOOT_STALL_TIMEOUT)
+
+            # reinitialize webdriver instance
+
+            web_instance.init_driver(service=service,
+                                     implicitly_wait_time=IMPLICITLY_WAIT_TIME)
+
+            # login again
+
+            web_instance.login(username='adpro', page_title='Login')
+
+            # return True/ False
+
+            check_result = web_instance.check(
+                sys_info_sys_name=sysName, sys_info_sys_location=sysLocation)
+
+            if check_result == False:
+
+                break
+
+            continuous_errors = 0
 
         except Exception as e:
 
-            pass
+            continuous_errors += 1
+
+            print('exception occurred')
+
+            logger.error(f'Error : {e}')
+
+            print(e)
+
+            if continuous_errors >= MAX_CONTINUOUS_ERRORS:
+
+                break
 
         finally:
 
-            if driver != None:
+            web_instance.quit()
 
-                driver.close()
+
+if __name__ == '__main__':
+
+    main()

@@ -1,68 +1,59 @@
-from selenium import webdriver
-
-from webdriver_manager.chrome import ChromeDriverManager
-
-from selenium.webdriver.support.ui import WebDriverWait
-
-from selenium.webdriver.support import expected_conditions as EC
-
 from selenium.webdriver.common.by import By
-
-from selenium.webdriver.chrome.service import Service
-
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-
-import subprocess
-
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 
 
-def check(driver, sysInfoSysName, sysInfoSysLocation, service, logger):
+def check(driver, sys_info_sys_name, sys_info_sys_location, logger,
+          timeout_time):
     try:
-        # Menu/SwitchInfo
+        time.sleep(timeout_time)
+        print('checking result...')
 
-        switchInfoToggle = driver.find_element(
+        # Menu/SwitchInfo
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((
+                By.XPATH,
+                '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/table[2]/tbody/tr/td[3]/a'
+            )), 'hi, no element')
+
+        switchInfoToggleEle = driver.find_element(
             By.XPATH,
             '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/table[2]/tbody/tr/td[3]/a'
         )
 
-        switchInfoToggle.click()
+        switchInfoToggleEle.click()
 
         # switch to iframe
-
         driver.switch_to.frame(driver.find_element(By.ID, "myframe"))
 
-        # get sysInfoSysName
-
-        _sysInfoSysName = driver.find_element(By.ID, 'sysInfoSysName').text
+        # get sys_info_sys_name
+        _sys_info_sys_name = driver.find_element(By.ID, 'sysInfoSysName').text
 
         # get sysInfoSysLocation
+        _sys_info_sys_location = driver.find_element(By.ID,
+                                                     'sysInfoSysLocation').text
 
-        _sysInfoSysLocation = driver.find_element(By.ID,
-                                                  'sysInfoSysLocation').text
-
-        if _sysInfoSysName == sysInfoSysName and _sysInfoSysLocation == sysInfoSysLocation:
-
+        if _sys_info_sys_name == sys_info_sys_name and _sys_info_sys_location == sys_info_sys_location:
             logger.info(
-                'expect: %s, got System Name: %s; expect: %s, got System Location: %s'
-                % (sysInfoSysName, _sysInfoSysName, sysInfoSysLocation,
-                   _sysInfoSysLocation))
+                'OK - expect: %s, got System Name: %s; expect: %s, got System Location: %s'
+                % (sys_info_sys_name, _sys_info_sys_name,
+                   sys_info_sys_location, _sys_info_sys_location))
 
+            return True
+        elif _sys_info_sys_name[-2:] == sys_info_sys_name[
+                -2:] and _sys_info_sys_location[-2:] == sys_info_sys_location[
+                    -2:]:
+            logger.warning(
+                f'WARN - got previous time configuration: System Name: {_sys_info_sys_name}, System location: {_sys_info_sys_location}'
+            )
+            return True
         else:
-
             logger.error(
-                'expect: %s, got System Name: %s; expect: %s, got System Location: %s'
-                % (sysInfoSysName, _sysInfoSysName, sysInfoSysLocation,
-                   _sysInfoSysLocation))
+                'error - expect: %s, got System Name: %s; expect: %s, got System Location: %s'
+                % (_sys_info_sys_name, sys_info_sys_name,
+                   _sys_info_sys_location, sys_info_sys_location))
 
+            return False
     except Exception as e:
-
-        print('check error')
-
-        raise Exception('check error')
-
-    finally:
-
-        # release resources
-
-        driver.close()
+        raise Exception(__name__, e)

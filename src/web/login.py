@@ -1,103 +1,82 @@
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-
-from selenium.webdriver.support import expected_conditions as EC
-
 from selenium.webdriver.common.by import By
-
 from selenium.webdriver.support.ui import WebDriverWait
-
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException, TimeoutException
 import time
 
 
-def login(driver, targetUrl, pageTitle, username, logger, timeoutTime):
+def login(driver, target_url, page_title, username, logger, timeout_time):
+    login_counter = 0
+    max_retries = 3
+    refresh_interval = 5
 
-    loginCounter = 0
+    def connect():
+        nonlocal login_counter
+        print(f'handling connect...')
 
-    status = True
+        while login_counter <= max_retries:
+            # break condition
+            login_counter += 1
 
-    # refresh
+            try:
+                driver.get(target_url)
+                # driver.get(target_url)
+                if page_title in driver.title:
 
-    def connect(counter):
+                    logger.info('OK - Http request ok')
 
-        counter += 1
+                    return True
+                else:
 
-        driver.get(targetUrl)
+                    raise Exception(__name__,
+                                    'Page title does not match, Wrong Page')
 
-        title = driver.title
+            except Exception as e:
 
-        if pageTitle in driver.title:
+                print(f'Retry {login_counter}')
 
-            logger.info('OK - Http request ok')
-
-        else:
-
-            if counter <= 3:
+                time.sleep(refresh_interval)
 
                 driver.refresh()
 
-                connect()
+        raise Exception(__name__,
+                        f'Bad http request after {login_counter} attempts')
 
-            else:
-
-                logger.error('Bad - Bad request')
-
-                return (False, 'Bad - Bad request')
-
-    def fillLoginField():
-
+    def fill_login_field():
         try:
+            print(f'handling fill_login_field...')
+            time.sleep(timeout_time)
+            WebDriverWait(driver, timeout_time).until(
+                EC.presence_of_element_located((By.ID, 'Login')))
 
-            # fill username input field
-
-            username = driver.find_element(By.ID, 'Login')
-
-            username.send_keys("adpro")
-
-            # click login button
-
-            loginButton = driver.find_element(By.ID, 'login_ok')
-
-            loginButton.click()
+            username_field = driver.find_element(By.ID, 'Login')
+            username_field.send_keys(username)
+            login_button = driver.find_element(By.ID, 'login_ok')
+            login_button.click()
 
         except NoSuchElementException as e:
+            raise Exception(
+                __name__, 'Login phase error, Login form not detected') from e
 
-            print('no login filed element detected')
-
-            raise Exception('no login filed element detected')
-
-        finally:
-
-            time.sleep(timeoutTime)
-
-    def passwordAlertCheck():
-
+    def handle_password_alert():
         try:
-
-            WebDriverWait(driver, 3).until(
-                EC.alert_is_present(), 'Timed out waiting for PA creation ' +
-                'confirmation popup to appear.')
-
+            print(f'handling handle_password_alert...')
+            time.sleep(timeout_time)
+            WebDriverWait(driver, timeout_time).until(EC.alert_is_present())
             alert = driver.switch_to.alert
-
             alert.accept()
+            print("OK - Password alert accepted")
 
-            print("password alert accepted")
+        except TimeoutException:
+            pass
 
-        except TimeoutException as e:
-
-            print("no password alert")
-
-            raise Exception('no password alert box detected')
+        except NoAlertPresentException:
+            pass  # No alert present, nothing to handle
 
     try:
-        connect(loginCounter)
-
-        fillLoginField()
-
-        passwordAlertCheck()
-
+        connect()
+        fill_login_field()
+        # Uncomment if you need to handle password alert
+        handle_password_alert()
     except Exception as e:
-
-        logger.error(e)
-
-        raise Exception('login phase error')
+        raise
