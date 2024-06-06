@@ -7,7 +7,7 @@ import time
 
 def login(driver, target_url, page_title, username, logger, timeout_time):
     login_counter = 0
-    max_retries = 3
+    max_retries = 2
     refresh_interval = 5
 
     def connect():

@@ -1,4 +1,5 @@
 import logging
+
 import time
 
 from datetime import datetime
@@ -19,7 +20,7 @@ from utils.randChar import randChar
 
 DEFAULT_URL = 'http://10.3.4.5'
 
-TARGET_URL = 'http://10.149.24.204'
+TARGET_URL = 'http://149.24.204'
 
 TELNET_TARGET = '192.168.0.60'
 
@@ -117,6 +118,7 @@ def main():
 
                 break
 
+            # reset error conters
             continuous_errors = 0
 
         except Exception as e:
@@ -130,7 +132,9 @@ def main():
             print(e)
 
             if continuous_errors >= MAX_CONTINUOUS_ERRORS:
-
+                logger.error(
+                    f'error occurred over {MAX_CONTINUOUS_ERRORS} times, main process stopped.'
+                )
                 break
 
         finally:

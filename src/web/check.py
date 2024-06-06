@@ -44,6 +44,7 @@ def check(driver, sys_info_sys_name, sys_info_sys_location, logger,
         elif _sys_info_sys_name[-2:] == sys_info_sys_name[
                 -2:] and _sys_info_sys_location[-2:] == sys_info_sys_location[
                     -2:]:
+            # check if last words is same last time configured, may due to configs didn't get saved.
             logger.warning(
                 f'WARN - got previous time configuration: System Name: {_sys_info_sys_name}, System location: {_sys_info_sys_location}'
             )
