@@ -20,7 +20,7 @@ from utils.randChar import randChar
 
 DEFAULT_URL = 'http://10.3.4.5'
 
-TARGET_URL = 'http://149.24.204'
+TARGET_URL = 'http://10.149.24.204'
 
 TELNET_TARGET = '192.168.0.60'
 
