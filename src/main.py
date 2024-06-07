@@ -99,7 +99,7 @@ def main():
 
             web_instance.quit()
 
-            # time.sleep(REBOOT_STALL_TIMEOUT)
+            time.sleep(REBOOT_STALL_TIMEOUT)
 
             @retry(stop_max_attempt_number=3,
                    wait_fixed=1000 * 5,
@@ -129,7 +129,7 @@ def main():
 
             if check_result == False:
 
-                break  #123
+                break
 
             # reset error coUnters
             continuous_errors = 0

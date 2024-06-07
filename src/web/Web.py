@@ -65,5 +65,5 @@ class Web:
 
     def close(self):
         if self.driver:
-            self.driver.quit()
+            self.driver.close()
             self.driver = None
