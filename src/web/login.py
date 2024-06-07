@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException, TimeoutException
+from retrying import retry
 import time
 
 
@@ -42,6 +43,7 @@ def login(driver, target_url, page_title, username, logger, timeout_time):
         raise Exception(__name__,
                         f'Bad http request after {login_counter} attempts')
 
+    @retry(stop_max_attempt_number=2)
     def fill_login_field():
         try:
             print(f'handling fill_login_field...')
@@ -51,26 +53,33 @@ def login(driver, target_url, page_title, username, logger, timeout_time):
 
             username_field = driver.find_element(By.ID, 'Login')
             username_field.send_keys(username)
+            WebDriverWait(driver, timeout_time).until(
+                EC.presence_of_element_located((By.ID, 'login_ok')))
             login_button = driver.find_element(By.ID, 'login_ok')
             login_button.click()
 
         except NoSuchElementException as e:
             raise Exception(
                 __name__, 'Login phase error, Login form not detected') from e
+        except TimeoutException as e:
+            raise Exception(__name__,
+                            'Login phase error, TimeoutException') from e
 
     def handle_password_alert():
         try:
             print(f'handling handle_password_alert...')
             time.sleep(timeout_time)
-            WebDriverWait(driver, timeout_time).until(EC.alert_is_present())
+            WebDriverWait(driver, 5).until(EC.alert_is_present())
             alert = driver.switch_to.alert
             alert.accept()
             print("OK - Password alert accepted")
 
         except TimeoutException:
+            print('handle_password_alert timeout')
             pass
 
         except NoAlertPresentException:
+            print('no handle_password_alert present')
             pass  # No alert present, nothing to handle
 
     try:

@@ -120,7 +120,7 @@ def set_prop(driver, timeout_time, logger, sys_info_sys_name,
 
             save_setting_to_flash_btn.click()
 
-            WebDriverWait(driver, 5).until(EC.alert_is_present())
+            WebDriverWait(driver, 10).until(EC.alert_is_present())
 
             alert = driver.switch_to.alert
 

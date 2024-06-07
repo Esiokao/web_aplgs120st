@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 import time
 
 
@@ -10,12 +11,15 @@ def check(driver, sys_info_sys_name, sys_info_sys_location, logger,
         time.sleep(timeout_time)
         print('checking result...')
 
-        # Menu/SwitchInfo
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((
-                By.XPATH,
-                '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/table[2]/tbody/tr/td[3]/a'
-            )), 'hi, no element')
+        try:
+            # Menu/SwitchInfo
+            WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((
+                    By.XPATH,
+                    '/html/body/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div/table[2]/tbody/tr/td[3]/a'
+                )), 'Menu/SwitchInfo')
+        except TimeoutException as e:
+            raise Exception(__name__, e)
 
         switchInfoToggleEle = driver.find_element(
             By.XPATH,
@@ -52,8 +56,8 @@ def check(driver, sys_info_sys_name, sys_info_sys_location, logger,
         else:
             logger.error(
                 'error - expect: %s, got System Name: %s; expect: %s, got System Location: %s'
-                % (_sys_info_sys_name, sys_info_sys_name,
-                   _sys_info_sys_location, sys_info_sys_location))
+                % (sys_info_sys_name, _sys_info_sys_name,
+                   sys_info_sys_location, _sys_info_sys_location))
 
             return False
     except Exception as e:

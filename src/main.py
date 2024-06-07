@@ -16,6 +16,7 @@ from telnet.TelnetConnection import TelnetConnection
 
 from utils.randChar import randChar
 
+from retrying import retry
 #
 
 DEFAULT_URL = 'http://10.3.4.5'
@@ -26,11 +27,11 @@ TELNET_TARGET = '192.168.0.60'
 
 TELNET_PORT = 23
 
-TIMEOUT_TIME = 1.5  # second
+TIMEOUT_TIME = 3  # second
 
 IMPLICITLY_WAIT_TIME = 5
 
-REBOOT_STALL_TIMEOUT = 100  # second
+REBOOT_STALL_TIMEOUT = 110  # second
 
 NUM_ATTEMPTS = 1500
 
@@ -98,27 +99,39 @@ def main():
 
             web_instance.quit()
 
-            time.sleep(REBOOT_STALL_TIMEOUT)
+            # time.sleep(REBOOT_STALL_TIMEOUT)
 
-            # reinitialize webdriver instance
+            @retry(stop_max_attempt_number=3,
+                   wait_fixed=1000 * 5,
+                   before_attempts=lambda retry_state: print(
+                       f"Retrying: login_Then_check..\n"))
+            def login_Then_check():
 
-            web_instance.init_driver(service=service,
-                                     implicitly_wait_time=IMPLICITLY_WAIT_TIME)
+                # reinitialize webdriver instance
 
-            # login again
+                web_instance.init_driver(
+                    service=service, implicitly_wait_time=IMPLICITLY_WAIT_TIME)
 
-            web_instance.login(username='adpro', page_title='Login')
+                # login again
 
-            # return True/ False
+                web_instance.login(username='adpro', page_title='Login')
 
-            check_result = web_instance.check(
-                sys_info_sys_name=sysName, sys_info_sys_location=sysLocation)
+                # return True/ False
+
+                result = web_instance.check(sys_info_sys_name=sysName,
+                                            sys_info_sys_location=sysLocation)
+
+                web_instance.quit()
+
+                return result
+
+            check_result = login_Then_check()
 
             if check_result == False:
 
-                break
+                break  #123
 
-            # reset error conters
+            # reset error coUnters
             continuous_errors = 0
 
         except Exception as e:
