@@ -43,12 +43,12 @@ class Web:
         sys_info_sys_location,
     ):
 
-        set_prop(driver=self.driver,
-                 timeout_time=self.timeout_time,
-                 logger=self.logger,
-                 sys_info_sys_name=sys_info_sys_name,
-                 sys_info_sys_location=sys_info_sys_location,
-                 tn=self.telnet_instance)
+        return set_prop(driver=self.driver,
+                        timeout_time=self.timeout_time,
+                        logger=self.logger,
+                        sys_info_sys_name=sys_info_sys_name,
+                        sys_info_sys_location=sys_info_sys_location,
+                        tn=self.telnet_instance)
 
     def check(self, sys_info_sys_name, sys_info_sys_location):
         return check(driver=self.driver,
