@@ -21,7 +21,7 @@ from retrying import retry
 
 DEFAULT_URL = 'http://10.3.4.5'
 
-TARGET_URL = 'http://10.149.24.205'
+TARGET_URL = 'http://10.3.4.5'
 
 TELNET_TARGET = '192.168.0.60'
 
@@ -94,8 +94,12 @@ def main():
 
             # setup property of DUT
 
-            web_instance.set_prop(sys_info_sys_name=sysName,
-                                  sys_info_sys_location=sysLocation)
+            set_prop_result = web_instance.set_prop(
+                sys_info_sys_name=sysName, sys_info_sys_location=sysLocation)
+
+            if set_prop_result == False:
+
+                break
 
             web_instance.quit()
 

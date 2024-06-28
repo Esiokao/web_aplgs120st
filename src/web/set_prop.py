@@ -2,6 +2,7 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.alert import Alert
 
 import time
 
@@ -99,6 +100,7 @@ def set_prop(driver, timeout_time, logger, sys_info_sys_name,
             raise Exception(__name__, e) from e
 
     def save_config():
+        is_success_prompt = True
         try:
             print(f'handling save_config...')
 
@@ -121,12 +123,17 @@ def set_prop(driver, timeout_time, logger, sys_info_sys_name,
             save_setting_to_flash_btn.click()
 
             WebDriverWait(driver, 10).until(EC.alert_is_present())
-
-            alert = driver.switch_to.alert
-
+            alert = Alert(driver)
+            alert_text = alert.text
             alert.accept()
 
-            logger.info('OK - save successful alert box detected')
+            # check if alert text is correct successful prompt
+            if 'Save configuration finished.' != alert_text:
+                is_success_prompt = False
+                logger.error('ERROR - alertbox message: %s' % alert_text)
+                return is_success_prompt
+
+            logger.info('OK - alertbox message: %s' % alert_text)
 
             start = time.time()
 
@@ -140,7 +147,7 @@ def set_prop(driver, timeout_time, logger, sys_info_sys_name,
                 (end - start) * 1000)))
 
             tn.close()
-
+            return True
         except NoSuchElementException as e:
             print(e)
             raise Exception(
@@ -157,7 +164,8 @@ def set_prop(driver, timeout_time, logger, sys_info_sys_name,
 
         toggle_menu()
         _set_prop()
-        save_config()
+        # TODO: refactor
+        return save_config()
 
     except Exception as e:
         raise
